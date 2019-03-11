@@ -6,9 +6,10 @@ cd = load(name="cd",
           sources=["chamfer_distance/chamfer_distance.cpp",
                    "chamfer_distance/chamfer_distance.cu"])
 
-class ChamferDistanceFunction(torch.autograd.Function):
+class ChamferDistanceFunction(torch.autograd.Function, gpu_id=0):
+    self.gpu_id = gpu_id
     @staticmethod
-    def forward(ctx, xyz1, xyz2):
+    def forward(ctx, xyz1, xyz2, gpu_id=0):
         batchsize, n, _ = xyz1.size()
         _, m, _ = xyz2.size()
         xyz1 = xyz1.contiguous()
@@ -22,10 +23,10 @@ class ChamferDistanceFunction(torch.autograd.Function):
         if not xyz1.is_cuda:
             cd.forward(xyz1, xyz2, dist1, dist2, idx1, idx2)
         else:
-            dist1 = dist1.cuda()
-            dist2 = dist2.cuda()
-            idx1 = idx1.cuda()
-            idx2 = idx2.cuda()
+            dist1 = dist1.cuda(self.gpu_id)
+            dist2 = dist2.cuda(self.gpu_id)
+            idx1 = idx1.cuda(self.gpu_id)
+            idx2 = idx2.cuda(self.gpu_id)
             cd.forward_cuda(xyz1, xyz2, dist1, dist2, idx1, idx2)
 
         ctx.save_for_backward(xyz1, xyz2, idx1, idx2)
@@ -45,8 +46,8 @@ class ChamferDistanceFunction(torch.autograd.Function):
         if not graddist1.is_cuda:
             cd.backward(xyz1, xyz2, gradxyz1, gradxyz2, graddist1, graddist2, idx1, idx2)
         else:
-            gradxyz1 = gradxyz1.cuda()
-            gradxyz2 = gradxyz2.cuda()
+            gradxyz1 = gradxyz1.cuda(self.gpu_id)
+            gradxyz2 = gradxyz2.cuda(self.gpu_id)
             cd.backward_cuda(xyz1, xyz2, gradxyz1, gradxyz2, graddist1, graddist2, idx1, idx2)
 
         return gradxyz1, gradxyz2
