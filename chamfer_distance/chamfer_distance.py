@@ -3,8 +3,8 @@ import torch
 
 from torch.utils.cpp_extension import load
 cd = load(name="cd",
-          sources=["chamfer_distance/chamfer_distance.cpp",
-                   "chamfer_distance/chamfer_distance.cu"])
+          sources=["factored3d/external/chamfer/chamfer_distance/chamfer_distance.cpp",
+                   "factored3d/external/chamfer/chamfer_distance/chamfer_distance.cu"])
 
 class ChamferDistanceFunction(torch.autograd.Function, gpu_id=0):
     self.gpu_id = gpu_id
